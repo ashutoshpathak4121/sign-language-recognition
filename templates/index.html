@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,7 +12,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/brand-icon.png') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.2">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.5">
+
   <script>
     (function() {
       const savedTheme = localStorage.getItem('signalframe_theme') || 'dark';
@@ -22,44 +23,47 @@
 </head>
 <body data-mode="{{ mode }}">
 
-  <!-- Top Navigation -->
+  <!-- Top Navigation Header -->
   <header class="app-header">
     <div class="header-container">
       <div class="brand-group">
-        <div class="brand-icon">
-          <img src="{{ url_for('static', filename='images/brand-icon.png') }}" alt="Signal Frame ASL Icon" class="brand-img">
-        </div>
-        <div class="brand-text">
-          <span class="brand-title">Signal Frame<span class="brand-accent"> AI</span></span>
-          <span class="brand-tagline">ASL Computer Vision</span>
-        </div>
+        <a href="/" class="brand-link" title="SignalFrame AI">
+          <div class="brand-icon">
+            <img src="{{ url_for('static', filename='images/brand-icon.png') }}" alt="Signal Frame ASL Icon" class="brand-img">
+          </div>
+          <div class="brand-text">
+            <span class="brand-title">Signal Frame<span class="brand-accent"> AI</span></span>
+            <span class="brand-tagline">ASL Computer Vision</span>
+          </div>
+        </a>
       </div>
 
-      <!-- Mode Selector Tabs & Author Profile & Theme Switcher -->
+      <!-- Navigation & Mode Tabs & Day/Night Switch & Creator Profile -->
       <div class="nav-right-group">
         <nav class="nav-tabs" aria-label="Detection Modes">
           <a href="/" class="nav-tab {% if mode == 'upload' %}active{% endif %}" id="tabUpload">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
             <span>Image Upload</span>
           </a>
           <a href="/live" class="nav-tab {% if mode == 'live' %}active{% endif %}" id="tabLive">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="3" ry="3"></rect></svg>
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="3" ry="3"></rect></svg>
             <span>Live Webcam</span>
             <span class="tab-badge">LIVE</span>
           </a>
         </nav>
 
-        <!-- Day / Night Mode Switcher -->
+        <!-- Day / Night Theme Mode Switcher -->
         <button type="button" id="themeToggleBtn" class="theme-toggle-btn" aria-label="Toggle Day and Night Mode" title="Toggle Day / Night Mode">
           <span class="theme-icon-sun" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
           </span>
           <span class="theme-icon-moon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
           </span>
           <span class="theme-text" id="themeText">Night</span>
         </button>
 
+        <!-- Top Nav Creator Profile -->
         <a href="https://github.com/ashutoshpathak4121" target="_blank" rel="noopener noreferrer" class="creator-nav-btn" title="View Creator Profile">
           <span class="creator-avatar">
             <img src="{{ url_for('static', filename='images/creator-avatar.jpg') }}" alt="Ashutosh Pathak" class="creator-nav-img">
@@ -70,7 +74,7 @@
     </div>
   </header>
 
-  <!-- Main Container -->
+  <!-- Main Application Container -->
   <main class="main-container">
     
     <!-- Hero Banner -->
@@ -104,112 +108,112 @@
     <!-- Workspace Grid -->
     <div class="workspace-grid">
       
-      <!-- Left Column: Interactive Control & Result Panel -->
+      <!-- Left Column: Interactive Controls & Telemetry -->
       <div class="panel-controls">
         
         {% if mode == 'live' %}
-        <!-- Live Camera Controls Card -->
-        <div class="modern-card">
-          <div class="card-header">
-            <h2 class="card-title">Webcam Controller</h2>
-            <div class="live-pill" id="livePill">
-              <span class="live-pill-dot"></span>
-              <span id="livePillText">OFFLINE</span>
-            </div>
-          </div>
-          <p class="card-desc">Start your camera to begin stream processing at 600ms detection intervals.</p>
-          
-          <div class="control-actions">
-            <button type="button" class="btn btn-primary btn-glow" id="btnStartCamera">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-              <span>Start camera</span>
-            </button>
-            <button type="button" class="btn btn-danger d-none" id="btnStopCamera">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
-              <span>Stop camera</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Live Real-Time Detection Card -->
-        <div class="modern-card readout-card">
-          <div class="card-header">
-            <h2 class="card-title">Live Detection Feed</h2>
-            <span class="tag-badge">Real-Time</span>
-          </div>
-
-          <div class="letter-hero-box">
-            <div class="letter-display" id="readoutLetter">—</div>
-            <div class="letter-info">
-              <div class="confidence-label">Confidence Score</div>
-              <div class="confidence-bar-wrap">
-                <div class="confidence-bar-fill" id="confidenceBar" style="width: 0%;"></div>
+          <!-- Live Camera Controls Card -->
+          <div class="modern-card">
+            <div class="card-header">
+              <h2 class="card-title">Webcam Controller</h2>
+              <div class="live-pill" id="livePill">
+                <span class="live-pill-dot"></span>
+                <span id="livePillText">OFFLINE</span>
               </div>
-              <div class="confidence-val" id="confidenceVal">0%</div>
+            </div>
+            <p class="card-desc">Start your camera to begin stream processing at 600ms detection intervals.</p>
+
+            <div class="control-actions">
+              <button type="button" class="btn btn-primary btn-glow" id="btnStartCamera">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                <span>Start camera</span>
+              </button>
+              <button type="button" class="btn btn-danger d-none" id="btnStopCamera">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
+                <span>Stop camera</span>
+              </button>
             </div>
           </div>
 
-          <div class="readout-status-text" id="readoutMeta">Webcam is off. Click "Turn On Camera" above.</div>
-
-          <!-- Detected Word Sequence Reel -->
-          <div class="sequence-reel-box">
-            <div class="sequence-header">
-              <span>Recent Signs Sequence</span>
-              <button type="button" class="btn-clear-reel" id="btnClearReel" title="Clear History">Clear</button>
+          <!-- Live Real-Time Detection Readout Card -->
+          <div class="modern-card readout-card">
+            <div class="card-header">
+              <h2 class="card-title">Live Detection Feed</h2>
+              <span class="tag-badge">Real-Time</span>
             </div>
-            <div class="sequence-chips" id="sequenceChips">
-              <span class="chip-placeholder">No signs detected yet</span>
+
+            <div class="letter-hero-box">
+              <div class="letter-display" id="readoutLetter">—</div>
+              <div class="letter-info">
+                <div class="confidence-label">Confidence Score</div>
+                <div class="confidence-bar-wrap">
+                  <div class="confidence-bar-fill" id="confidenceBar" style="width: 0%;"></div>
+                </div>
+                <div class="confidence-val" id="confidenceVal">0%</div>
+              </div>
+            </div>
+
+            <div class="readout-status-text" id="readoutMeta">Webcam is offline. Click "Start camera" above.</div>
+
+            <!-- Detected Word Sequence Reel -->
+            <div class="sequence-reel-box">
+              <div class="sequence-header">
+                <span>Recent Signs Sequence</span>
+                <button type="button" class="btn-clear-reel" id="btnClearReel" title="Clear History">Clear</button>
+              </div>
+              <div class="sequence-chips" id="sequenceChips">
+                <span class="chip-placeholder">No signs detected yet</span>
+              </div>
             </div>
           </div>
-        </div>
 
         {% else %}
-        <!-- Image Upload Controls Card -->
-        <div class="modern-card">
-          <div class="card-header">
-            <h2 class="card-title">Upload Image</h2>
-            <span class="tag-badge">JPG / PNG</span>
-          </div>
-          
-          <div class="dropzone" id="dropzone" tabindex="0" role="button">
-            <div class="dropzone-icon-box">
-              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          <!-- Image Upload Controls Card -->
+          <div class="modern-card">
+            <div class="card-header">
+              <h2 class="card-title">Upload Image</h2>
+              <span class="tag-badge">JPG / PNG</span>
             </div>
-            <p class="dropzone-main-text">Drag & drop your sign image here</p>
-            <p class="dropzone-sub-text">or <span class="highlight-link">browse from files</span> (max 5MB)</p>
-            <input type="file" id="fileInput" accept="image/jpeg, image/png">
-          </div>
 
-          <div class="control-actions">
-            <button type="button" class="btn btn-secondary" id="btnChooseImage">Choose File</button>
-            <button type="button" class="btn btn-primary btn-glow" id="btnDetectSigns" disabled>
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <span>Detect Signs</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Static Upload Result Card -->
-        <div class="modern-card readout-card">
-          <div class="card-header">
-            <h2 class="card-title">Recognition Result</h2>
-            <span class="tag-badge" id="inferenceBadge">Awaiting Image</span>
-          </div>
-
-          <div class="letter-hero-box">
-            <div class="letter-display" id="readoutLetter">—</div>
-            <div class="letter-info">
-              <div class="confidence-label">Prediction Confidence</div>
-              <div class="confidence-bar-wrap">
-                <div class="confidence-bar-fill" id="confidenceBar" style="width: 0%;"></div>
+            <div class="dropzone" id="dropzone" tabindex="0" role="button">
+              <div class="dropzone-icon-box">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
               </div>
-              <div class="confidence-val" id="confidenceVal">0%</div>
+              <p class="dropzone-main-text">Drag & drop your sign image here</p>
+              <p class="dropzone-sub-text">or <span class="highlight-link">browse from files</span> (max 5MB)</p>
+              <input type="file" id="fileInput" accept="image/jpeg, image/png">
+            </div>
+
+            <div class="control-actions">
+              <button type="button" class="btn btn-secondary" id="btnChooseImage">Choose File</button>
+              <button type="button" class="btn btn-primary btn-glow" id="btnDetectSigns" disabled>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <span>Detect Signs</span>
+              </button>
             </div>
           </div>
 
-          <div class="readout-status-text" id="readoutMeta">Upload an image and choose Detect Signs.</div>
-          <ul class="detections-list d-none" id="detectionsList"></ul>
-        </div>
+          <!-- Static Upload Result Card -->
+          <div class="modern-card readout-card">
+            <div class="card-header">
+              <h2 class="card-title">Recognition Result</h2>
+              <span class="tag-badge" id="inferenceBadge">Awaiting Image</span>
+            </div>
+
+            <div class="letter-hero-box">
+              <div class="letter-display" id="readoutLetter">—</div>
+              <div class="letter-info">
+                <div class="confidence-label">Prediction Confidence</div>
+                <div class="confidence-bar-wrap">
+                  <div class="confidence-bar-fill" id="confidenceBar" style="width: 0%;"></div>
+                </div>
+                <div class="confidence-val" id="confidenceVal">0%</div>
+              </div>
+            </div>
+
+            <div class="readout-status-text" id="readoutMeta">Upload an image and choose Detect Signs.</div>
+            <ul class="detections-list d-none" id="detectionsList"></ul>
+          </div>
         {% endif %}
 
       </div>
@@ -218,7 +222,7 @@
       <div class="panel-stage">
         <div class="stage-frame" id="stageFrame">
           
-          <!-- Viewfinder Frame Header Overlay -->
+          <!-- Viewfinder Header Overlay -->
           <div class="stage-overlay-header">
             <div class="stage-tag" id="stageTag">
               <span class="tag-dot"></span>
@@ -250,7 +254,7 @@
             </h3>
             <p class="backdrop-desc">
               {% if mode == 'live' %}
-                Click <strong>"Turn On Camera"</strong> to start detection.
+                Click <strong>"Start camera"</strong> to start detection.
               {% else %}
                 Select an image file to display bounding boxes and recognized alphabet letters.
               {% endif %}
@@ -265,7 +269,7 @@
 
           <!-- Stage Image (Upload Mode) -->
           <img id="stageImage" class="stage-element stage-img d-none" alt="ASL Sign Output" src="">
-
+          
           <!-- Stage Webcam Feed (Live Mode) -->
           <video id="stageVideo" class="stage-element stage-video d-none" autoplay playsinline muted></video>
         </div>
@@ -283,7 +287,6 @@
       </div>
       
       <div class="alphabet-grid" id="alphabetGrid">
-        <!-- Generates 26 Letter Badges -->
         <div class="alpha-chip"><strong>A</strong><span>Fist thumb up</span></div>
         <div class="alpha-chip"><strong>B</strong><span>Open palm 4</span></div>
         <div class="alpha-chip"><strong>C</strong><span>Curved hand</span></div>
@@ -362,6 +365,6 @@
   <canvas id="captureCanvas" hidden></canvas>
 
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-  <script src="{{ url_for('static', filename='js/app.js') }}?v=3.2"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}?v=3.5"></script>
 </body>
 </html>

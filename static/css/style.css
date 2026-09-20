@@ -169,6 +169,14 @@ button {
   gap: 12px;
 }
 
+.brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+
+
 .brand-icon {
   width: 44px;
   height: 44px;
