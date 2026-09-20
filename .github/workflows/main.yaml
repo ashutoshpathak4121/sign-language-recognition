@@ -51,7 +51,7 @@ jobs:
   build-and-push-ecr:
     name: Build & Push Docker Image to ECR
     needs: integration
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.AWS_ACCESS_KEY_ID != ''
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -84,7 +84,7 @@ jobs:
   deploy-to-ec2:
     name: Continuous Deployment to AWS EC2
     needs: build-and-push-ecr
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.AWS_ACCESS_KEY_ID != ''
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: self-hosted
     steps:
       - name: Configure AWS Credentials
