@@ -27,7 +27,19 @@ logging.basicConfig(
 logger = logging.getLogger("sign_language_app")
 
 app = Flask(__name__)
+app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 CORS(app)
+
+
+@app.after_request
+def add_header(response):
+    """Add headers to both force latest content and disable caching."""
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 
 # Configuration from environment variables
 PORT = int(os.environ.get("PORT", 8080))

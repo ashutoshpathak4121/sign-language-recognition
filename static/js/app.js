@@ -1,164 +1,186 @@
 /**
- * Sign Language Detection — Application Logic
- * Implements Upload and Fullscreen Live Camera modes with AJAX POST /predict
+ * SignalFrame AI — Modern Application Controller
+ * Handles Webcam Stream Processing, Live ASL Sequence Tracking & Drag-Drop Inference
  */
 
 $(document).ready(function () {
   "use strict";
 
-  // Elements
-  const $stage = $("#stage");
-  const $stageContainer = $("#stageContainer");
+  // Cache UI elements
+  const $stageFrame = $("#stageFrame");
   const $stageImage = $("#stageImage");
   const $stageVideo = $("#stageVideo");
-  const $stageEmpty = $("#stageEmpty");
+  const $stageStandby = $("#stageStandby");
   const $stageLoading = $("#stageLoading");
-  const $stageTab = $("#stageTab");
+  const $stageTag = $("#stageTag");
+  const $stageTagText = $("#stageTagText");
+  const $hudScanline = $("#hudScanline");
   const $fileInput = $("#fileInput");
   const $dropzone = $("#dropzone");
   const $btnChooseImage = $("#btnChooseImage");
   const $btnDetectSigns = $("#btnDetectSigns");
   const $btnStartCamera = $("#btnStartCamera");
   const $btnStopCamera = $("#btnStopCamera");
-  const $btnToggleFullscreen = $("#btnToggleFullscreen");
-  const $cameraStatusText = $("#cameraStatusText");
-  const $liveIndicator = $("#liveIndicator");
-  const $liveStatusText = $("#liveStatusText");
-  const $liveReadoutLetter = $("#liveReadoutLetter");
-  const $liveReadoutConf = $("#liveReadoutConf");
+  const $livePill = $("#livePill");
+  const $livePillText = $("#livePillText");
   const $noticeBox = $("#noticeBox");
   const $noticeTitle = $("#noticeTitle");
   const $noticeMessage = $("#noticeMessage");
+  const $btnCloseNotice = $("#btnCloseNotice");
   const $readoutLetter = $("#readoutLetter");
+  const $confidenceBar = $("#confidenceBar");
+  const $confidenceVal = $("#confidenceVal");
   const $readoutMeta = $("#readoutMeta");
+  const $sequenceChips = $("#sequenceChips");
+  const $btnClearReel = $("#btnClearReel");
   const $detectionsList = $("#detectionsList");
-  const $btnHeroStartCamera = $("#btnHeroStartCamera");
-  const $btnRetryCamera = $("#btnRetryCamera");
-  const $liveStandbyHero = $("#liveStandbyHero");
-  const $liveErrorCard = $("#liveErrorCard");
-  const $liveErrorTitle = $("#liveErrorTitle");
-  const $liveErrorDesc = $("#liveErrorDesc");
+  const $inferenceBadge = $("#inferenceBadge");
   const captureCanvas = document.getElementById("captureCanvas");
   const captureCtx = captureCanvas ? captureCanvas.getContext("2d") : null;
 
-  // State
+  // Runtime State
   let selectedBase64 = null;
   let mediaStream = null;
   let isLiveActive = false;
   let isRequestInFlight = false;
-  let lastLiveRequestTime = 0;
-  const LIVE_INTERVAL_MS = 500;
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+  let recentSigns = [];
+  const LIVE_INTERVAL_MS = 600;
 
   // =========================================================================
-  // Notice & Notification Utilities
+  // Notification Utility
   // =========================================================================
-  function showNotice(type, title, message) {
-    $noticeBox
-      .removeClass("d-none notice--error notice--success")
-      .addClass(type === "error" ? "notice--error" : "notice--success");
+  function showNotice(title, message) {
     $noticeTitle.text(title);
     $noticeMessage.text(message);
+    $noticeBox.removeClass("d-none");
   }
 
   function hideNotice() {
     $noticeBox.addClass("d-none");
   }
 
+  $btnCloseNotice.on("click", hideNotice);
+
   function setLoading(loading) {
     if (loading) {
       $stageLoading.removeClass("d-none");
-      $btnDetectSigns.prop("disabled", true).attr("aria-disabled", "true");
+      $btnDetectSigns.prop("disabled", true);
     } else {
       $stageLoading.addClass("d-none");
       if (selectedBase64) {
-        $btnDetectSigns.prop("disabled", false).removeAttr("aria-disabled");
+        $btnDetectSigns.prop("disabled", false);
       }
     }
   }
 
   // =========================================================================
-  // Result Display Logic
+  // Sequence History Reel (Live Mode)
+  // =========================================================================
+  function appendSequenceLetter(letter) {
+    if (!letter || letter === "—") return;
+    
+    // Avoid spamming duplicate letter if it was just added in the last second
+    const last = recentSigns[recentSigns.length - 1];
+    if (last === letter && recentSigns.length > 0) return;
+
+    recentSigns.push(letter);
+    if (recentSigns.length > 12) recentSigns.shift(); // keep max 12 items
+
+    renderSequenceReel();
+  }
+
+  function renderSequenceReel() {
+    if (!$sequenceChips.length) return;
+    $sequenceChips.empty();
+
+    if (recentSigns.length === 0) {
+      $sequenceChips.html('<span class="chip-placeholder">No signs detected yet</span>');
+      return;
+    }
+
+    recentSigns.forEach((char) => {
+      const $chip = $("<span>").addClass("seq-chip").text(char);
+      $sequenceChips.append($chip);
+    });
+  }
+
+  $btnClearReel.on("click", function () {
+    recentSigns = [];
+    renderSequenceReel();
+  });
+
+  // =========================================================================
+  // Display Results
   // =========================================================================
   function displayResults(data, isLiveMode = false) {
     hideNotice();
 
-    // 1. Update image view
-    if (isLiveMode) {
-      $stageVideo.removeClass("d-none");
-      $stageImage.addClass("d-none");
-      $stageEmpty.addClass("d-none");
-    } else if (data.image) {
+    if (!isLiveMode && data.image) {
       $stageImage
         .attr("src", "data:image/jpeg;base64," + data.image)
         .removeClass("d-none");
-      $stageVideo.addClass("d-none");
-      $stageEmpty.addClass("d-none");
+      if ($stageStandby.length) $stageStandby.addClass("d-none");
     }
 
     const detections = data.detections || [];
 
     if (detections.length > 0) {
       const top = detections[0];
-      const confidencePercent = Math.round(top.confidence * 100);
+      const score = Math.round(top.confidence * 100);
 
-      // Trigger stage bracket motion and label tab
-      $stage.addClass("has-result");
-      $stageTab.text(`Letter ${top.label} ${confidencePercent}%`);
+      $stageFrame.addClass("has-target");
+      $stageTag.addClass("detected");
+      $stageTagText.text(`DETECTED: ${top.label} (${score}%)`);
 
-      // Update Live Floating HUD
-      $liveReadoutLetter.text(top.label);
-      $liveReadoutConf.text(`${confidencePercent}% Confident`);
-
-      // Update Standard Readout (Upload mode)
       $readoutLetter.text(top.label);
-      $readoutMeta.html(
-        `Letter <strong style="color: var(--ink);">${top.label}</strong>. <span class="tabular-nums">${confidencePercent}%</span> confident.`
-      );
+      $confidenceBar.css("width", score + "%");
+      $confidenceVal.text(score + "%");
 
-      // Additional detections list
-      $detectionsList.empty();
-      if (detections.length > 1) {
-        $detectionsList.removeClass("d-none");
-        detections.slice(1).forEach(function (det) {
-          const score = Math.round(det.confidence * 100);
-          const $item = $("<li>")
-            .addClass("readout__detections-item")
-            .html(`<span>Sign ${det.label}</span><strong class="tabular-nums">${score}%</strong>`);
-          $detectionsList.append($item);
-        });
-      } else {
-        $detectionsList.addClass("d-none");
+      $readoutMeta.html(`Identified ASL sign for letter <strong style="color:#FFF;">"${top.label}"</strong> with <span style="color:#06B6D4;">${score}%</span> confidence.`);
+      if ($inferenceBadge.length) $inferenceBadge.text("Sign Identified");
+
+      if (isLiveMode) {
+        appendSequenceLetter(top.label);
+      }
+
+      if ($detectionsList.length) {
+        $detectionsList.empty();
+        if (detections.length > 1) {
+          $detectionsList.removeClass("d-none");
+          detections.slice(1).forEach((d) => {
+            const pct = Math.round(d.confidence * 100);
+            $detectionsList.append(`<li><span>Sign ${d.label}</span><strong>${pct}%</strong></li>`);
+          });
+        } else {
+          $detectionsList.addClass("d-none");
+        }
       }
     } else {
-      // No signs detected
-      $stage.removeClass("has-result");
-      $stageTab.text("Letter —");
-      $liveReadoutLetter.text("—");
-      $liveReadoutConf.text("Scanning...");
+      $stageFrame.removeClass("has-target");
+      $stageTag.removeClass("detected");
+      $stageTagText.text(isLiveMode ? "SCANNING FEED..." : "STAGE READY");
+
       $readoutLetter.text("—");
-      $readoutMeta.text("No sign found.");
-      $detectionsList.addClass("d-none");
+      $confidenceBar.css("width", "0%");
+      $confidenceVal.text("0%");
+      $readoutMeta.text(isLiveMode ? "Scanning webcam for hand signs..." : "No hand sign detected in image.");
+      if ($detectionsList.length) $detectionsList.addClass("d-none");
     }
   }
 
   // =========================================================================
-  // Upload Mode Handler
+  // Upload Handler
   // =========================================================================
   function handleFile(file) {
     if (!file) return;
 
-    hideNotice();
-
-    // Validate type
-    if (!file.type.match("image/jpeg") && !file.type.match("image/png")) {
-      showNotice("error", "Wrong file type", "That file is not an image. Choose a JPG or PNG.");
+    if (!file.type.match("image/(jpeg|png|jpg)")) {
+      showNotice("Invalid File Type", "Please select a standard JPEG or PNG image.");
       return;
     }
 
-    // Validate size
-    if (file.size > MAX_FILE_SIZE) {
-      showNotice("error", "File too large", "That image is larger than 5 MB. Choose a smaller one.");
+    if (file.size > 5 * 1024 * 1024) {
+      showNotice("File Exceeds Limit", "Images must be 5 MB or smaller.");
       return;
     }
 
@@ -167,65 +189,53 @@ $(document).ready(function () {
       const dataUrl = e.target.result;
       selectedBase64 = dataUrl.split(",")[1];
 
-      // Preview in stage
       $stageImage.attr("src", dataUrl).removeClass("d-none");
-      $stageVideo.addClass("d-none");
-      $stageEmpty.addClass("d-none");
-      $stage.removeClass("has-result");
+      if ($stageStandby.length) $stageStandby.addClass("d-none");
+      $stageFrame.removeClass("has-target");
+      $stageTag.removeClass("detected");
+      $stageTagText.text("IMAGE LOADED");
 
+      $btnDetectSigns.prop("disabled", false);
       $readoutLetter.text("—");
-      $readoutMeta.text("Image loaded. Click Detect signs to analyze.");
-      $detectionsList.addClass("d-none");
-
-      $btnDetectSigns.prop("disabled", false).removeAttr("aria-disabled");
+      $confidenceBar.css("width", "0%");
+      $confidenceVal.text("0%");
+      $readoutMeta.text("Image loaded. Click 'Detect Signs' to run neural network inference.");
+      if ($inferenceBadge.length) $inferenceBadge.text("Ready to Detect");
+      hideNotice();
     };
+
+    reader.onerror = function () {
+      showNotice("Read Error", "Could not read the selected image file.");
+    };
+
     reader.readAsDataURL(file);
   }
 
-  // Dropzone click and keyboard trigger
-  $btnChooseImage.on("click", function () {
-    $fileInput.trigger("click");
+  $btnChooseImage.on("click", () => $fileInput.trigger("click"));
+  $dropzone.on("click", (e) => {
+    if (e.target !== $fileInput[0]) $fileInput.trigger("click");
   });
 
-  $dropzone.on("click", function (e) {
-    if (e.target !== $fileInput[0]) {
-      $fileInput.trigger("click");
-    }
-  });
+  $fileInput.on("change", (e) => handleFile(e.target.files[0]));
 
-  $dropzone.on("keydown", function (e) {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      $fileInput.trigger("click");
-    }
-  });
-
-  $fileInput.on("change", function (e) {
-    const file = e.target.files[0];
-    handleFile(file);
-  });
-
-  // Drag and drop events
-  $dropzone.on("dragover dragenter", function (e) {
+  $dropzone.on("dragover dragenter", (e) => {
     e.preventDefault();
     e.stopPropagation();
     $dropzone.addClass("is-dragover");
   });
 
-  $dropzone.on("dragleave dragend drop", function (e) {
+  $dropzone.on("dragleave dragend drop", (e) => {
     e.preventDefault();
     e.stopPropagation();
     $dropzone.removeClass("is-dragover");
   });
 
-  $dropzone.on("drop", function (e) {
+  $dropzone.on("drop", (e) => {
     const files = e.originalEvent.dataTransfer.files;
-    if (files && files.length > 0) {
-      handleFile(files[0]);
-    }
+    if (files && files.length > 0) handleFile(files[0]);
   });
 
-  // Execute Detection API Call
+  // Run Upload Prediction
   $btnDetectSigns.on("click", function () {
     if (!selectedBase64) return;
 
@@ -243,47 +253,34 @@ $(document).ready(function () {
       },
       error: function (xhr) {
         setLoading(false);
-        let errorMsg = "Detection did not finish. Check your connection and choose Detect signs again.";
+        let errorMsg = "Detection failed. Check server logs or try another image.";
         try {
           const errData = JSON.parse(xhr.responseText);
-          if (errData && errData.error) {
-            errorMsg = errData.error;
-          }
+          if (errData && errData.error) errorMsg = errData.error;
         } catch (e) {}
-        showNotice("error", "Server error", errorMsg);
+        showNotice("Inference Failed", errorMsg);
       },
     });
   });
 
   // =========================================================================
-  // Live Camera Mode Handler
+  // Live Webcam Handler
   // =========================================================================
   async function startCamera() {
     hideNotice();
-    $liveErrorCard.addClass("d-none");
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      $liveStandbyHero.addClass("d-none");
-      $liveErrorCard.removeClass("d-none");
-      $liveErrorTitle.text("Camera Not Supported");
-      $liveErrorDesc.text("Your browser or URL cannot access webcams. Please make sure you are opening http://localhost:8080 or http://127.0.0.1:8080 in Google Chrome, Microsoft Edge, or Firefox.");
+      showNotice("Webcam Unavailable", "Your browser does not support webcam access or needs HTTPS/localhost.");
       return;
     }
 
     try {
-      // First attempt with user-facing ideal resolution
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "user",
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
+          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false,
         });
       } catch (constraintErr) {
-        console.warn("Retrying getUserMedia with basic constraints...", constraintErr);
-        // Fallback to basic unconstrained video for broader PC/webcam driver compatibility
         mediaStream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: false,
@@ -295,42 +292,27 @@ $(document).ready(function () {
       await videoElement.play();
 
       $stageVideo.removeClass("d-none");
-      $stageImage.addClass("d-none");
-      $stageEmpty.addClass("d-none");
-      $liveStandbyHero.addClass("d-none");
-      $liveErrorCard.addClass("d-none");
+      if ($stageStandby.length) $stageStandby.addClass("d-none");
+      if ($hudScanline.length) $hudScanline.removeClass("d-none");
 
       $btnStartCamera.addClass("d-none");
       $btnStopCamera.removeClass("d-none");
-      $liveIndicator.addClass("is-live");
-      $liveStatusText.text("LIVE DETECTING");
-      $liveReadoutConf.text("Scanning...");
+      $livePill.addClass("active");
+      $livePillText.text("LIVE");
+      $stageTagText.text("STREAM ACTIVE");
+      $readoutMeta.text("Camera streaming. Hold your ASL hand sign steadily in front of the lens.");
 
       isLiveActive = true;
       requestLiveFrame();
     } catch (err) {
       console.error("Camera access error:", err);
-      let errorTitle = "Camera access error";
-      let errorMsg = "Could not start video stream. Check camera permissions or browser settings.";
-
       if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-        errorTitle = "Camera Permission Blocked";
-        errorMsg = "Your browser blocked camera access. Click the lock/tune icon on the left of your URL bar (top-left), set Camera to 'Allow', and click 'Retry Camera'.";
+        showNotice("Camera Blocked", "Please grant camera permission in your browser's address bar settings, then click Turn On Camera.");
       } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
-        errorTitle = "No Webcam Detected";
-        errorMsg = "No webcam was found on your PC. Please check that your webcam is plugged in or use Upload mode.";
-      } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
-        errorTitle = "Camera In Use By Another App";
-        errorMsg = "Your camera is currently locked by another app (e.g. Zoom, Teams, Skype, OBS, or another tab). Close those apps and click 'Retry Camera'.";
-      } else if (err.name === "OverconstrainedError") {
-        errorTitle = "Webcam Resolution Unsupported";
-        errorMsg = "Your webcam could not satisfy the video resolution constraints. Please reconnect your webcam.";
+        showNotice("No Webcam Found", "No video input device found. Please connect a webcam.");
+      } else {
+        showNotice("Camera Locked", "Could not start video stream. Ensure no other application (Zoom, Teams, Camera app) is using the webcam.");
       }
-
-      $liveStandbyHero.addClass("d-none");
-      $liveErrorCard.removeClass("d-none");
-      $liveErrorTitle.text(errorTitle);
-      $liveErrorDesc.text(errorMsg);
     }
   }
 
@@ -339,7 +321,7 @@ $(document).ready(function () {
     isRequestInFlight = false;
 
     if (mediaStream) {
-      mediaStream.getTracks().forEach((track) => track.stop());
+      mediaStream.getTracks().forEach((t) => t.stop());
       mediaStream = null;
     }
 
@@ -349,35 +331,31 @@ $(document).ready(function () {
     }
 
     $stageVideo.addClass("d-none");
-    $stage.removeClass("has-result");
-    $liveStandbyHero.removeClass("d-none");
-    $liveErrorCard.addClass("d-none");
+    if ($stageStandby.length) $stageStandby.removeClass("d-none");
+    if ($hudScanline.length) $hudScanline.addClass("d-none");
+    $stageFrame.removeClass("has-target");
+    $stageTag.removeClass("detected");
+    $stageTagText.text("STAGE READY");
 
     $btnStopCamera.addClass("d-none");
     $btnStartCamera.removeClass("d-none");
-    $liveIndicator.removeClass("is-live");
-    $liveStatusText.text("Camera Off");
-    $liveReadoutLetter.text("—");
-    $liveReadoutConf.text("Stopped");
+    $livePill.removeClass("active");
+    $livePillText.text("OFFLINE");
+    $readoutLetter.text("—");
+    $confidenceBar.css("width", "0%");
+    $confidenceVal.text("0%");
+    $readoutMeta.text("Webcam is off. Click 'Turn On Camera' above.");
   }
 
   function requestLiveFrame() {
     if (!isLiveActive || isRequestInFlight) return;
 
-    const now = Date.now();
-    const timeSinceLast = now - lastLiveRequestTime;
-    if (timeSinceLast < LIVE_INTERVAL_MS) {
-      setTimeout(requestLiveFrame, LIVE_INTERVAL_MS - timeSinceLast);
-      return;
-    }
-
     const video = $stageVideo[0];
-    if (!video || video.readyState !== 4) {
+    if (!video || video.readyState < 2 || video.videoWidth === 0) {
       setTimeout(requestLiveFrame, 100);
       return;
     }
 
-    // Capture frame scaled down to max 640 px for fast detection
     let targetWidth = video.videoWidth || 640;
     let targetHeight = video.videoHeight || 480;
     const maxDimension = 640;
@@ -400,7 +378,6 @@ $(document).ready(function () {
     const frameBase64 = frameDataUrl.split(",")[1];
 
     isRequestInFlight = true;
-    lastLiveRequestTime = Date.now();
 
     $.ajax({
       url: "/predict",
@@ -411,74 +388,23 @@ $(document).ready(function () {
         isRequestInFlight = false;
         if (isLiveActive) {
           displayResults(response, true);
-          requestLiveFrame();
+          setTimeout(requestLiveFrame, LIVE_INTERVAL_MS);
         }
       },
-      error: function (xhr) {
+      error: function () {
         isRequestInFlight = false;
         if (isLiveActive) {
-          console.warn("Live frame predict error, pausing live stream:", xhr.statusText);
-          showNotice(
-            "error",
-            "Live detection paused",
-            "Detection did not finish. Click Start camera to resume."
-          );
-          stopCamera();
+          setTimeout(requestLiveFrame, LIVE_INTERVAL_MS * 2);
         }
       },
     });
   }
 
-  // Fullscreen Toggle using Browser Fullscreen API
-  function toggleFullscreen() {
-    const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
-    const targetElement = document.documentElement;
-
-    if (!isFullscreen) {
-      if (targetElement.requestFullscreen) {
-        targetElement.requestFullscreen();
-      } else if (targetElement.webkitRequestFullscreen) {
-        targetElement.webkitRequestFullscreen();
-      }
-      $btnToggleFullscreen.find(".hud-btn-text").text("Exit Full Screen");
-      $btnToggleFullscreen.find(".fullscreen-icon-expand").addClass("d-none");
-      $btnToggleFullscreen.find(".fullscreen-icon-compress").removeClass("d-none");
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      }
-      $btnToggleFullscreen.find(".hud-btn-text").text("Full Screen");
-      $btnToggleFullscreen.find(".fullscreen-icon-expand").removeClass("d-none");
-      $btnToggleFullscreen.find(".fullscreen-icon-compress").addClass("d-none");
-    }
-  }
-
-  $btnToggleFullscreen.on("click", toggleFullscreen);
-
-  function handleFullscreenChange() {
-    const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
-    if (isFullscreen) {
-      $btnToggleFullscreen.find(".hud-btn-text").text("Exit Full Screen");
-      $btnToggleFullscreen.find(".fullscreen-icon-expand").addClass("d-none");
-      $btnToggleFullscreen.find(".fullscreen-icon-compress").removeClass("d-none");
-    } else {
-      $btnToggleFullscreen.find(".hud-btn-text").text("Full Screen");
-      $btnToggleFullscreen.find(".fullscreen-icon-expand").removeClass("d-none");
-      $btnToggleFullscreen.find(".fullscreen-icon-compress").addClass("d-none");
-    }
-  }
-
-  document.addEventListener("fullscreenchange", handleFullscreenChange);
-  document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
-
+  // Event Listeners
   $btnStartCamera.on("click", startCamera);
-  $btnHeroStartCamera.on("click", startCamera);
-  $btnRetryCamera.on("click", startCamera);
   $btnStopCamera.on("click", stopCamera);
 
-  // Auto-release tracks on page unload or visibility change
+  // Auto clean up
   window.addEventListener("beforeunload", stopCamera);
   window.addEventListener("pagehide", stopCamera);
   document.addEventListener("visibilitychange", function () {
@@ -486,4 +412,10 @@ $(document).ready(function () {
       stopCamera();
     }
   });
+
+  // Auto-init camera if in /live mode
+  const isLivePage = $("body").attr("data-mode") === "live" || window.location.pathname.endsWith("/live");
+  if (isLivePage) {
+    startCamera();
+  }
 });

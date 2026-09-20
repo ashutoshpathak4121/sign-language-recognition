@@ -15,29 +15,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python 3.10
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
           cache: "pip"
 
-      - name: Install dependencies
+      - name: Install System Libraries (for OpenCV & MediaPipe)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgl1 libglib2.0-0
+
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install pytest flake8
 
       - name: Lint with flake8
         run: |
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # exit-zero treats all errors as warnings. Max line length is 100.
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+          # Stop the build if there are Python syntax errors or undefined names (excluding 3rd party yolov5)
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=yolov5,venv,.venv,data,__pycache__,.git
+          # Exit-zero treats all style warnings as non-fatal
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics --exclude=yolov5,venv,.venv,data,__pycache__,.git
 
       - name: Run test suite
         run: |
-          pytest -v
+          python -m pytest -v
 
   # =========================================================================
   # 2. Build and Push Job: Docker Build & Publish to Amazon ECR
@@ -45,14 +51,14 @@ jobs:
   build-and-push-ecr:
     name: Build & Push Docker Image to ECR
     needs: integration
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.AWS_ACCESS_KEY_ID != ''
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -60,7 +66,7 @@ jobs:
 
       - name: Log in to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag, and push Docker image to Amazon ECR
         env:
@@ -73,16 +79,16 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
   # =========================================================================
-  # 3. Continuous Deployment: Pull & Run on EC2 Self-Hosted Runner
+  # 3. Continuous Deployment: Pull & Run on EC2 Runner
   # =========================================================================
   deploy-to-ec2:
     name: Continuous Deployment to AWS EC2
     needs: build-and-push-ecr
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.AWS_ACCESS_KEY_ID != ''
     runs-on: self-hosted
     steps:
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -90,7 +96,7 @@ jobs:
 
       - name: Log in to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Pull latest Docker image from ECR
         env:

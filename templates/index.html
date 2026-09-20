@@ -2,250 +2,342 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <meta name="description" content="Recognise American Sign Language (ASL) alphabet hand signs instantly from photos or live webcam feed using deep learning.">
-  <title>Sign Language Detection — Show a sign. See what it says.</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Real-Time Sign Language Recognition & ASL Fingerspelling Detection powered by YOLOv5.">
+  <title>SignalFrame AI — Real-Time Sign Language Detection</title>
 
-  <!-- Google Fonts: Bricolage Grotesque (Display) & Atkinson Hyperlegible (Body) -->
+  <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 
-  <!-- Custom Design Tokens and Responsive Styles -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.0">
 </head>
-<body class="{% if mode == 'live' %}mode-live-active{% endif %}">
+<body data-mode="{{ mode }}">
 
-  <!-- Site Header -->
-  <header class="site-header" id="siteHeader">
-    <div class="site-container">
-      <div class="header-inner">
-        <a href="/" class="nav-brand">
-          <span class="nav-brand-icon" aria-hidden="true"></span>
-          <span>Signal Frame</span>
-        </a>
+  <!-- Top Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-group">
+        <div class="brand-icon">🤟</div>
+        <div class="brand-text">
+          <span class="brand-title">Signal Frame<span class="brand-accent"> AI</span></span>
+          <span class="brand-tagline">ASL Computer Vision</span>
+        </div>
+      </div>
 
-        <!-- Mode Switch: Upload vs Live Camera -->
-        <nav class="mode-switch" aria-label="Detection mode selector">
-          <a href="/" class="mode-link {% if mode == 'upload' %}active{% endif %}" {% if mode == 'upload' %}aria-current="page"{% endif %} id="modeUploadLink">Upload</a>
-          <a href="/live" class="mode-link {% if mode == 'live' %}active{% endif %}" {% if mode == 'live' %}aria-current="page"{% endif %} id="modeLiveLink">Live camera</a>
+      <!-- Mode Selector Tabs & Author Profile -->
+      <div class="nav-right-group">
+        <nav class="nav-tabs" aria-label="Detection Modes">
+          <a href="/" class="nav-tab {% if mode == 'upload' %}active{% endif %}" id="tabUpload">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <span>Image Upload</span>
+          </a>
+          <a href="/live" class="nav-tab {% if mode == 'live' %}active{% endif %}" id="tabLive">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="3" ry="3"></rect></svg>
+            <span>Live Webcam</span>
+            <span class="tab-badge">LIVE</span>
+          </a>
         </nav>
+
+        <a href="https://github.com/ashutoshpathak4121" target="_blank" rel="noopener noreferrer" class="creator-nav-btn" title="View Creator Profile">
+          <span class="creator-avatar">AP</span>
+          <span class="creator-name">Ashutosh Pathak</span>
+        </a>
       </div>
     </div>
   </header>
 
-  <!-- Main Content Layout -->
-  <main class="site-container" id="mainContent">
+  <!-- Main Container -->
+  <main class="main-container">
     
-    <!-- Intro text -->
-    <div class="page-intro">
-      <h1>Show a sign. See what it says.</h1>
-      <p class="text-sub">Upload a photo or use your camera. The tool finds the hand sign and tells you which letter it sees.</p>
-    </div>
-
-    <!-- Dynamic Notice Box -->
-    <div id="noticeBox" class="notice d-none" role="alert" aria-live="polite">
-      <svg class="notice__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-      </svg>
-      <div class="notice__body">
-        <span class="notice__title" id="noticeTitle">Notice</span>
-        <span id="noticeMessage">Details will appear here.</span>
+    <!-- Hero Banner -->
+    <section class="hero-section">
+      <div class="hero-badge">
+        <span class="status-pulse"></span>
+        <span>YOLOv5 Deep Learning Engine Active</span>
       </div>
+      <h1 class="hero-title"><span class="gradient-text">Show a sign. See what it says.</span></h1>
+      <p class="hero-desc">
+        {% if mode == 'live' %}
+          Point your hand at the camera to detect letters A through Z with real-time bounding box tracking.
+        {% else %}
+          Upload a photo or drop an image. The tool finds the hand sign and tells you which letter it sees.
+        {% endif %}
+      </p>
+    </section>
+
+    <!-- Global Alert / Notice Banner -->
+    <div id="noticeBox" class="alert-banner d-none" role="alert">
+      <div class="alert-icon-box">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      </div>
+      <div class="alert-content">
+        <strong id="noticeTitle">Notice</strong>
+        <p id="noticeMessage">Alert description.</p>
+      </div>
+      <button type="button" class="alert-close" id="btnCloseNotice" aria-label="Close">&times;</button>
     </div>
 
-    <div class="main-layout {% if mode == 'live' %}live-fullscreen-layout{% endif %}" id="mainLayout">
+    <!-- Workspace Grid -->
+    <div class="workspace-grid">
       
-      <!-- Primary Controls Column (Active in Upload Mode) -->
-      <div class="layout-primary {% if mode == 'live' %}d-none{% endif %}" id="uploadLayoutCol">
-        <!-- Controls for Upload Mode -->
-        <div id="uploadControls" class="mode-controls">
-          <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Drop image here or click to choose file">
-            <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="17 8 12 3 7 8"></polyline>
-              <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-            <p class="dropzone-title">Drag and drop a sign image here</p>
-            <p class="dropzone-desc">Supports JPG or PNG up to 5 MB</p>
+      <!-- Left Column: Interactive Control & Result Panel -->
+      <div class="panel-controls">
+        
+        {% if mode == 'live' %}
+        <!-- Live Camera Controls Card -->
+        <div class="modern-card">
+          <div class="card-header">
+            <h2 class="card-title">Webcam Controller</h2>
+            <div class="live-pill" id="livePill">
+              <span class="live-pill-dot"></span>
+              <span id="livePillText">OFFLINE</span>
+            </div>
+          </div>
+          <p class="card-desc">Start your camera to begin stream processing at 600ms detection intervals.</p>
+          
+          <div class="control-actions">
+            <button type="button" class="btn btn-primary btn-glow" id="btnStartCamera">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <span>Start camera</span>
+            </button>
+            <button type="button" class="btn btn-danger d-none" id="btnStopCamera">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
+              <span>Stop camera</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Real-Time Detection Card -->
+        <div class="modern-card readout-card">
+          <div class="card-header">
+            <h2 class="card-title">Live Detection Feed</h2>
+            <span class="tag-badge">Real-Time</span>
+          </div>
+
+          <div class="letter-hero-box">
+            <div class="letter-display" id="readoutLetter">—</div>
+            <div class="letter-info">
+              <div class="confidence-label">Confidence Score</div>
+              <div class="confidence-bar-wrap">
+                <div class="confidence-bar-fill" id="confidenceBar" style="width: 0%;"></div>
+              </div>
+              <div class="confidence-val" id="confidenceVal">0%</div>
+            </div>
+          </div>
+
+          <div class="readout-status-text" id="readoutMeta">Webcam is off. Click "Turn On Camera" above.</div>
+
+          <!-- Detected Word Sequence Reel -->
+          <div class="sequence-reel-box">
+            <div class="sequence-header">
+              <span>Recent Signs Sequence</span>
+              <button type="button" class="btn-clear-reel" id="btnClearReel" title="Clear History">Clear</button>
+            </div>
+            <div class="sequence-chips" id="sequenceChips">
+              <span class="chip-placeholder">No signs detected yet</span>
+            </div>
+          </div>
+        </div>
+
+        {% else %}
+        <!-- Image Upload Controls Card -->
+        <div class="modern-card">
+          <div class="card-header">
+            <h2 class="card-title">Upload Image</h2>
+            <span class="tag-badge">JPG / PNG</span>
+          </div>
+          
+          <div class="dropzone" id="dropzone" tabindex="0" role="button">
+            <div class="dropzone-icon-box">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            </div>
+            <p class="dropzone-main-text">Drag & drop your sign image here</p>
+            <p class="dropzone-sub-text">or <span class="highlight-link">browse from files</span> (max 5MB)</p>
             <input type="file" id="fileInput" accept="image/jpeg, image/png">
           </div>
 
-          <div class="btn-group">
-            <button type="button" class="btn btn-secondary" id="btnChooseImage">Choose image</button>
-            <button type="button" class="btn btn-primary" id="btnDetectSigns" disabled aria-disabled="true">Detect signs</button>
+          <div class="control-actions">
+            <button type="button" class="btn btn-secondary" id="btnChooseImage">Choose File</button>
+            <button type="button" class="btn btn-primary btn-glow" id="btnDetectSigns" disabled>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <span>Detect Signs</span>
+            </button>
           </div>
         </div>
 
-        <!-- Result Readout Panel for Upload Mode -->
-        <section class="readout" id="uploadReadoutPanel" aria-live="polite" aria-atomic="true">
-          <h3 class="readout__header">Detection Result</h3>
-          <div class="readout__letter" id="readoutLetter">—</div>
-          <div class="readout__meta" id="readoutMeta">No sign detected yet.</div>
-          <ul class="readout__detections-list d-none" id="detectionsList"></ul>
-        </section>
+        <!-- Static Upload Result Card -->
+        <div class="modern-card readout-card">
+          <div class="card-header">
+            <h2 class="card-title">Recognition Result</h2>
+            <span class="tag-badge" id="inferenceBadge">Awaiting Image</span>
+          </div>
+
+          <div class="letter-hero-box">
+            <div class="letter-display" id="readoutLetter">—</div>
+            <div class="letter-info">
+              <div class="confidence-label">Prediction Confidence</div>
+              <div class="confidence-bar-wrap">
+                <div class="confidence-bar-fill" id="confidenceBar" style="width: 0%;"></div>
+              </div>
+              <div class="confidence-val" id="confidenceVal">0%</div>
+            </div>
+          </div>
+
+          <div class="readout-status-text" id="readoutMeta">Upload an image and choose Detect Signs.</div>
+          <ul class="detections-list d-none" id="detectionsList"></ul>
+        </div>
+        {% endif %}
+
       </div>
 
-      <!-- Stage Column (Full-width & Full-height in Live Mode) -->
-      <div class="layout-stage" id="stageCol">
-        <div class="stage-container" id="stageContainer">
+      <!-- Right Column: AI Vision Stage (Viewfinder) -->
+      <div class="panel-stage">
+        <div class="stage-frame" id="stageFrame">
           
-          <div class="stage {% if mode == 'live' %}stage--fullscreen{% endif %}" id="stage">
-            <!-- Signature Corner Brackets -->
-            <span class="stage__bracket stage__bracket--tl" aria-hidden="true"></span>
-            <span class="stage__bracket stage__bracket--tr" aria-hidden="true"></span>
-            <span class="stage__bracket stage__bracket--bl" aria-hidden="true"></span>
-            <span class="stage__bracket stage__bracket--br" aria-hidden="true"></span>
-
-            <!-- Result Label Tab -->
-            <div class="stage__tab" id="stageTab" aria-hidden="true">Letter —</div>
-
-            <!-- Floating Live Camera HUD Controls Overlay -->
-            <div class="live-hud-top {% if mode != 'live' %}d-none{% endif %}" id="liveHudTop">
-              <div class="live-badge" id="liveIndicator">
-                <span class="live-dot"></span>
-                <span id="liveStatusText">Camera Off</span>
-              </div>
-              <div class="live-hud-actions">
-                <button type="button" class="hud-btn" id="btnToggleFullscreen" title="Toggle Fullscreen" aria-label="Toggle Fullscreen">
-                  <svg class="fullscreen-icon-expand" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-                  </svg>
-                  <svg class="fullscreen-icon-compress d-none" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 14h6v6m10-10h-6V4m0 6 7-7M3 21l7-7"></path>
-                  </svg>
-                  <span class="hud-btn-text">Full Screen</span>
-                </button>
-              </div>
+          <!-- Viewfinder Frame Header Overlay -->
+          <div class="stage-overlay-header">
+            <div class="stage-tag" id="stageTag">
+              <span class="tag-dot"></span>
+              <span id="stageTagText">STAGE READY</span>
             </div>
-
-            <!-- Floating Live Bottom Readout & Control HUD -->
-            <div class="live-hud-bottom {% if mode != 'live' %}d-none{% endif %}" id="liveHudBottom">
-              <div class="live-readout-card">
-                <span class="live-readout-title">Detected Sign</span>
-                <div class="d-flex align-items-center gap-3 justify-content-center">
-                  <span class="live-readout-letter" id="liveReadoutLetter">—</span>
-                  <span class="live-readout-conf" id="liveReadoutConf">Ready</span>
-                </div>
-              </div>
-
-              <!-- In-HUD Live Camera Action Controls -->
-              <div class="live-actions-wrap" id="liveActionsWrap">
-                <button type="button" class="btn btn-primary btn-hud-action" id="btnStartCamera">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                  <span>Start camera</span>
-                </button>
-                <button type="button" class="btn btn-secondary btn-hud-action d-none" id="btnStopCamera">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
-                  <span>Stop camera</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Standby Hero for Live Camera Mode -->
-            <div class="live-standby-hero {% if mode != 'live' %}d-none{% endif %}" id="liveStandbyHero">
-              <div class="live-standby-icon-box">
-                <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.75">
-                  <path d="M23 7l-7 5 7 5V7z"></path>
-                  <rect x="1" y="5" width="15" height="14" rx="3" ry="3"></rect>
-                </svg>
-              </div>
-              <h2 class="live-standby-title">Live Sign Language Camera</h2>
-              <p class="live-standby-desc">Show your American Sign Language (ASL) alphabet hand signs to the camera for real-time recognition.</p>
-              
-              <button type="button" class="btn btn-primary btn-hero-start" id="btnHeroStartCamera">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                <span>Start camera</span>
-              </button>
-              
-              <p class="live-standby-hint">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                Click <strong>"Allow"</strong> when your browser prompts for camera access.
-              </p>
-            </div>
-
-            <!-- Standby Error Card for Live Camera Mode -->
-            <div class="live-error-card d-none" id="liveErrorCard">
-              <div class="live-error-icon-box">
-                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="8" x2="12" y2="12"></line>
-                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                </svg>
-              </div>
-              <h3 class="live-error-title" id="liveErrorTitle">Camera Access Needed</h3>
-              <p class="live-error-desc" id="liveErrorDesc">Please allow camera permissions in your browser or close other apps using the webcam.</p>
-              <div class="live-error-actions">
-                <button type="button" class="btn btn-primary" id="btnRetryCamera">Retry Camera</button>
-                <a href="/" class="btn btn-secondary">Use Upload Mode</a>
-              </div>
-            </div>
-
-            <!-- Loading Indicator -->
-            <div class="stage__loading d-none" id="stageLoading" aria-hidden="true">
-              <div class="stage__spinner"></div>
-              <p class="stage__loading-text">Reading your sign...</p>
-            </div>
-
-            <!-- Empty State for Upload Mode -->
-            <div class="stage__empty {% if mode == 'live' %}d-none{% endif %}" id="stageEmpty">
-              <svg class="stage__empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                <polyline points="21 15 16 10 5 21"></polyline>
-              </svg>
-              <p class="stage__empty-text">Add a photo or choose an image.</p>
-            </div>
-
-            <!-- Rendered Image Element -->
-            <img id="stageImage" class="stage__media d-none" alt="Your image with the detected sign marked" src="">
-
-            <!-- Webcam Video Feed -->
-            <video id="stageVideo" class="stage__video d-none" autoplay playsinline muted aria-label="Webcam feed"></video>
+            <div class="stage-fps" id="stageFps">AI Vision: YOLOv5</div>
           </div>
 
+          <!-- Futuristic HUD Corner Brackets -->
+          <span class="hud-corner hud-corner-tl"></span>
+          <span class="hud-corner hud-corner-tr"></span>
+          <span class="hud-corner hud-corner-bl"></span>
+          <span class="hud-corner hud-corner-br"></span>
+
+          <!-- Animated Laser Scan Line -->
+          <div class="hud-scanline d-none" id="hudScanline"></div>
+
+          <!-- Standby Graphics Screen -->
+          <div class="stage-backdrop-content" id="stageStandby">
+            <div class="backdrop-icon-ring">
+              {% if mode == 'live' %}
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="3" ry="3"></rect></svg>
+              {% else %}
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+              {% endif %}
+            </div>
+            <h3 class="backdrop-title">
+              {% if mode == 'live' %}Webcam Viewfinder Ready{% else %}Drop Image To Inspect{% endif %}
+            </h3>
+            <p class="backdrop-desc">
+              {% if mode == 'live' %}
+                Click <strong>"Turn On Camera"</strong> to start detection.
+              {% else %}
+                Select an image file to display bounding boxes and recognized alphabet letters.
+              {% endif %}
+            </p>
+          </div>
+
+          <!-- Loading Spinner Overlay -->
+          <div class="stage-loading-overlay d-none" id="stageLoading">
+            <div class="quantum-spinner"></div>
+            <p class="loading-msg">Processing Neural Network Inference...</p>
+          </div>
+
+          <!-- Stage Image (Upload Mode) -->
+          <img id="stageImage" class="stage-element stage-img d-none" alt="ASL Sign Output" src="">
+
+          <!-- Stage Webcam Feed (Live Mode) -->
+          <video id="stageVideo" class="stage-element stage-video d-none" autoplay playsinline muted></video>
         </div>
       </div>
 
     </div>
 
-    <!-- Tips & Information Section -->
-    <div class="info-grid">
-      <div class="info-card">
-        <h3>Tips for better results</h3>
-        <ul>
-          <li><strong>Lighting:</strong> Ensure even light on your hands with minimal dark shadows.</li>
-          <li><strong>Position:</strong> Hold your hand near the center of the frame against a plain background.</li>
-          <li><strong>Clarity:</strong> Keep your hand still for a moment to prevent motion blur.</li>
-        </ul>
+    <!-- ASL Quick Alphabet Reference Gallery -->
+    <section class="guide-section">
+      <div class="guide-header">
+        <div>
+          <h2 class="guide-title">American Sign Language Alphabet (A–Z)</h2>
+          <p class="guide-desc">Quick reference of standard ASL single-hand finger configurations.</p>
+        </div>
       </div>
+      
+      <div class="alphabet-grid" id="alphabetGrid">
+        <!-- Generates 26 Letter Badges -->
+        <div class="alpha-chip"><strong>A</strong><span>Fist thumb up</span></div>
+        <div class="alpha-chip"><strong>B</strong><span>Open palm 4</span></div>
+        <div class="alpha-chip"><strong>C</strong><span>Curved hand</span></div>
+        <div class="alpha-chip"><strong>D</strong><span>Index finger up</span></div>
+        <div class="alpha-chip"><strong>E</strong><span>Curled claw</span></div>
+        <div class="alpha-chip"><strong>F</strong><span>OK sign circle</span></div>
+        <div class="alpha-chip"><strong>G</strong><span>Index thumb point</span></div>
+        <div class="alpha-chip"><strong>H</strong><span>2 fingers side</span></div>
+        <div class="alpha-chip"><strong>I</strong><span>Pinky up</span></div>
+        <div class="alpha-chip"><strong>K</strong><span>Peace thumb in</span></div>
+        <div class="alpha-chip"><strong>L</strong><span>L shape</span></div>
+        <div class="alpha-chip"><strong>M</strong><span>3 fingers tuck</span></div>
+        <div class="alpha-chip"><strong>N</strong><span>2 fingers tuck</span></div>
+        <div class="alpha-chip"><strong>O</strong><span>O circle shape</span></div>
+        <div class="alpha-chip"><strong>P</strong><span>K pointing down</span></div>
+        <div class="alpha-chip"><strong>Q</strong><span>G pointing down</span></div>
+        <div class="alpha-chip"><strong>R</strong><span>Crossed fingers</span></div>
+        <div class="alpha-chip"><strong>S</strong><span>Fist thumb front</span></div>
+        <div class="alpha-chip"><strong>T</strong><span>Thumb under index</span></div>
+        <div class="alpha-chip"><strong>U</strong><span>2 fingers joined</span></div>
+        <div class="alpha-chip"><strong>V</strong><span>Peace sign V</span></div>
+        <div class="alpha-chip"><strong>W</strong><span>3 fingers W</span></div>
+        <div class="alpha-chip"><strong>X</strong><span>Hook index</span></div>
+        <div class="alpha-chip"><strong>Y</strong><span>Thumb pinky out</span></div>
+      </div>
+    </section>
 
-      <div class="info-card">
-        <h3>About this tool and its limits</h3>
-        <ul>
-          <li><strong>ASL Alphabet (A–Z):</strong> Trained on static handshapes. Letters J and Z use dynamic motion, so single-frame detection is best-effort.</li>
-          <li><strong>Practice Partner:</strong> This is an educational tool and does not replace a certified human sign language interpreter.</li>
-          <li><strong>Privacy:</strong> Your image is sent to our server to find the sign, used only for this result, and replaced by the next image.</li>
-        </ul>
+    <!-- Project Creator & Developer Showcase -->
+    <section class="creator-section">
+      <div class="creator-card floating-card">
+        <div class="creator-card-left">
+          <div class="creator-large-avatar">
+            <span>AP</span>
+            <div class="avatar-glow-ring"></div>
+          </div>
+          <div class="creator-info">
+            <span class="creator-badge">Project Creator & Machine Learning Engineer</span>
+            <h3 class="creator-full-name">Ashutosh Pathak</h3>
+            <p class="creator-bio">Full-Stack AI Developer specializing in Computer Vision, Deep Learning (PyTorch/YOLOv5) & High-Performance Web Applications.</p>
+          </div>
+        </div>
+        <div class="creator-card-right">
+          <div class="creator-social-links">
+            <a href="https://www.linkedin.com/in/ashutosh-pathak-942698299/" target="_blank" rel="noopener noreferrer" class="btn btn-creator-li">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+              <span>LinkedIn</span>
+            </a>
+            <a href="https://github.com/ashutoshpathak4121" target="_blank" rel="noopener noreferrer" class="btn btn-creator-gh">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+              <span>GitHub</span>
+            </a>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
+
   </main>
 
-  <!-- Site Footer -->
-  <footer class="site-footer">
-    <div class="site-container footer-inner">
-      <span>&copy; 2026 Sign Language Detection. All rights reserved.</span>
-      <span>Built with Flask & MediaPipe</span>
+  <!-- App Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <span>Designed & Developed with ❤️ by <strong>Ashutosh Pathak</strong>. Powered by YOLOv5 & Flask.</span>
+      </div>
+      <div class="footer-right">
+        <a href="https://github.com/ashutoshpathak4121" target="_blank" rel="noopener noreferrer" class="footer-link">@ashutoshpathak4121</a>
+        <span class="footer-pill">Model: ASL-YOLOv5s</span>
+        <span class="footer-pill">Status: Online</span>
+      </div>
     </div>
   </footer>
 
-  <!-- Hidden Canvas for Video Frame Capture -->
+  <!-- Hidden Canvas for frame buffer -->
   <canvas id="captureCanvas" hidden></canvas>
 
-  <!-- jQuery & Application Logic -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}?v=3.0"></script>
 </body>
 </html>
