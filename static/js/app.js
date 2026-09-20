@@ -418,4 +418,33 @@ $(document).ready(function () {
   if (isLivePage) {
     startCamera();
   }
+
+  // =========================================================================
+  // Day / Night Theme Controller
+  // =========================================================================
+  const $themeToggleBtn = $("#themeToggleBtn");
+  const $themeText = $("#themeText");
+
+  function updateThemeUI(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("signalframe_theme", theme);
+    if (theme === "light") {
+      $themeText.text("Day");
+      $themeToggleBtn.attr("title", "Switch to Night Mode (Dark)");
+    } else {
+      $themeText.text("Night");
+      $themeToggleBtn.attr("title", "Switch to Day Mode (Light)");
+    }
+  }
+
+  // Initialize theme UI matching active theme
+  const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
+  updateThemeUI(currentTheme);
+
+  $themeToggleBtn.on("click", function () {
+    const active = document.documentElement.getAttribute("data-theme") || "dark";
+    const nextTheme = active === "light" ? "dark" : "light";
+    updateThemeUI(nextTheme);
+  });
 });
+
