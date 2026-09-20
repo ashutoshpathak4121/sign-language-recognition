@@ -1,0 +1,20 @@
+# Docker build ignore rules
+.git
+.gitignore
+.github
+data/*
+!data/.gitkeep
+yolov5/runs/*
+!yolov5/runs/.gitkeep
+tests
+notebooks
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.coverage
+.env
+.venv
+venv
+*.md

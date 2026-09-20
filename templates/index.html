@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="description" content="Recognise American Sign Language (ASL) alphabet hand signs instantly from photos or live webcam feed using deep learning.">
+  <title>Sign Language Detection — Show a sign. See what it says.</title>
+
+  <!-- Google Fonts: Bricolage Grotesque (Display) & Atkinson Hyperlegible (Body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&display=swap" rel="stylesheet">
+
+  <!-- Custom Design Tokens and Responsive Styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="{% if mode == 'live' %}mode-live-active{% endif %}">
+
+  <!-- Site Header -->
+  <header class="site-header" id="siteHeader">
+    <div class="site-container">
+      <div class="header-inner">
+        <a href="/" class="nav-brand">
+          <span class="nav-brand-icon" aria-hidden="true"></span>
+          <span>Signal Frame</span>
+        </a>
+
+        <!-- Mode Switch: Upload vs Live Camera -->
+        <nav class="mode-switch" aria-label="Detection mode selector">
+          <a href="/" class="mode-link {% if mode == 'upload' %}active{% endif %}" {% if mode == 'upload' %}aria-current="page"{% endif %} id="modeUploadLink">Upload</a>
+          <a href="/live" class="mode-link {% if mode == 'live' %}active{% endif %}" {% if mode == 'live' %}aria-current="page"{% endif %} id="modeLiveLink">Live camera</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="site-container" id="mainContent">
+    
+    <!-- Intro text -->
+    <div class="page-intro">
+      <h1>Show a sign. See what it says.</h1>
+      <p class="text-sub">Upload a photo or use your camera. The tool finds the hand sign and tells you which letter it sees.</p>
+    </div>
+
+    <!-- Dynamic Notice Box -->
+    <div id="noticeBox" class="notice d-none" role="alert" aria-live="polite">
+      <svg class="notice__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <div class="notice__body">
+        <span class="notice__title" id="noticeTitle">Notice</span>
+        <span id="noticeMessage">Details will appear here.</span>
+      </div>
+    </div>
+
+    <div class="main-layout {% if mode == 'live' %}live-fullscreen-layout{% endif %}" id="mainLayout">
+      
+      <!-- Primary Controls Column (Active in Upload Mode) -->
+      <div class="layout-primary {% if mode == 'live' %}d-none{% endif %}" id="uploadLayoutCol">
+        <!-- Controls for Upload Mode -->
+        <div id="uploadControls" class="mode-controls">
+          <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Drop image here or click to choose file">
+            <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <p class="dropzone-title">Drag and drop a sign image here</p>
+            <p class="dropzone-desc">Supports JPG or PNG up to 5 MB</p>
+            <input type="file" id="fileInput" accept="image/jpeg, image/png">
+          </div>
+
+          <div class="btn-group">
+            <button type="button" class="btn btn-secondary" id="btnChooseImage">Choose image</button>
+            <button type="button" class="btn btn-primary" id="btnDetectSigns" disabled aria-disabled="true">Detect signs</button>
+          </div>
+        </div>
+
+        <!-- Result Readout Panel for Upload Mode -->
+        <section class="readout" id="uploadReadoutPanel" aria-live="polite" aria-atomic="true">
+          <h3 class="readout__header">Detection Result</h3>
+          <div class="readout__letter" id="readoutLetter">—</div>
+          <div class="readout__meta" id="readoutMeta">No sign detected yet.</div>
+          <ul class="readout__detections-list d-none" id="detectionsList"></ul>
+        </section>
+      </div>
+
+      <!-- Stage Column (Full-width & Full-height in Live Mode) -->
+      <div class="layout-stage" id="stageCol">
+        <div class="stage-container" id="stageContainer">
+          
+          <div class="stage {% if mode == 'live' %}stage--fullscreen{% endif %}" id="stage">
+            <!-- Signature Corner Brackets -->
+            <span class="stage__bracket stage__bracket--tl" aria-hidden="true"></span>
+            <span class="stage__bracket stage__bracket--tr" aria-hidden="true"></span>
+            <span class="stage__bracket stage__bracket--bl" aria-hidden="true"></span>
+            <span class="stage__bracket stage__bracket--br" aria-hidden="true"></span>
+
+            <!-- Result Label Tab -->
+            <div class="stage__tab" id="stageTab" aria-hidden="true">Letter —</div>
+
+            <!-- Floating Live Camera HUD Controls Overlay -->
+            <div class="live-hud-top {% if mode != 'live' %}d-none{% endif %}" id="liveHudTop">
+              <div class="live-badge" id="liveIndicator">
+                <span class="live-dot"></span>
+                <span id="liveStatusText">Camera Off</span>
+              </div>
+              <div class="live-hud-actions">
+                <button type="button" class="hud-btn" id="btnToggleFullscreen" title="Toggle Fullscreen" aria-label="Toggle Fullscreen">
+                  <svg class="fullscreen-icon-expand" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                  </svg>
+                  <svg class="fullscreen-icon-compress d-none" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 14h6v6m10-10h-6V4m0 6 7-7M3 21l7-7"></path>
+                  </svg>
+                  <span class="hud-btn-text">Full Screen</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Floating Live Bottom Readout & Control HUD -->
+            <div class="live-hud-bottom {% if mode != 'live' %}d-none{% endif %}" id="liveHudBottom">
+              <div class="live-readout-card">
+                <span class="live-readout-title">Detected Sign</span>
+                <div class="d-flex align-items-center gap-3 justify-content-center">
+                  <span class="live-readout-letter" id="liveReadoutLetter">—</span>
+                  <span class="live-readout-conf" id="liveReadoutConf">Ready</span>
+                </div>
+              </div>
+
+              <!-- In-HUD Live Camera Action Controls -->
+              <div class="live-actions-wrap" id="liveActionsWrap">
+                <button type="button" class="btn btn-primary btn-hud-action" id="btnStartCamera">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                  <span>Start camera</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-hud-action d-none" id="btnStopCamera">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
+                  <span>Stop camera</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Standby Hero for Live Camera Mode -->
+            <div class="live-standby-hero {% if mode != 'live' %}d-none{% endif %}" id="liveStandbyHero">
+              <div class="live-standby-icon-box">
+                <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.75">
+                  <path d="M23 7l-7 5 7 5V7z"></path>
+                  <rect x="1" y="5" width="15" height="14" rx="3" ry="3"></rect>
+                </svg>
+              </div>
+              <h2 class="live-standby-title">Live Sign Language Camera</h2>
+              <p class="live-standby-desc">Show your American Sign Language (ASL) alphabet hand signs to the camera for real-time recognition.</p>
+              
+              <button type="button" class="btn btn-primary btn-hero-start" id="btnHeroStartCamera">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                <span>Start camera</span>
+              </button>
+              
+              <p class="live-standby-hint">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                Click <strong>"Allow"</strong> when your browser prompts for camera access.
+              </p>
+            </div>
+
+            <!-- Standby Error Card for Live Camera Mode -->
+            <div class="live-error-card d-none" id="liveErrorCard">
+              <div class="live-error-icon-box">
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              </div>
+              <h3 class="live-error-title" id="liveErrorTitle">Camera Access Needed</h3>
+              <p class="live-error-desc" id="liveErrorDesc">Please allow camera permissions in your browser or close other apps using the webcam.</p>
+              <div class="live-error-actions">
+                <button type="button" class="btn btn-primary" id="btnRetryCamera">Retry Camera</button>
+                <a href="/" class="btn btn-secondary">Use Upload Mode</a>
+              </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div class="stage__loading d-none" id="stageLoading" aria-hidden="true">
+              <div class="stage__spinner"></div>
+              <p class="stage__loading-text">Reading your sign...</p>
+            </div>
+
+            <!-- Empty State for Upload Mode -->
+            <div class="stage__empty {% if mode == 'live' %}d-none{% endif %}" id="stageEmpty">
+              <svg class="stage__empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+              <p class="stage__empty-text">Add a photo or choose an image.</p>
+            </div>
+
+            <!-- Rendered Image Element -->
+            <img id="stageImage" class="stage__media d-none" alt="Your image with the detected sign marked" src="">
+
+            <!-- Webcam Video Feed -->
+            <video id="stageVideo" class="stage__video d-none" autoplay playsinline muted aria-label="Webcam feed"></video>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Tips & Information Section -->
+    <div class="info-grid">
+      <div class="info-card">
+        <h3>Tips for better results</h3>
+        <ul>
+          <li><strong>Lighting:</strong> Ensure even light on your hands with minimal dark shadows.</li>
+          <li><strong>Position:</strong> Hold your hand near the center of the frame against a plain background.</li>
+          <li><strong>Clarity:</strong> Keep your hand still for a moment to prevent motion blur.</li>
+        </ul>
+      </div>
+
+      <div class="info-card">
+        <h3>About this tool and its limits</h3>
+        <ul>
+          <li><strong>ASL Alphabet (A–Z):</strong> Trained on static handshapes. Letters J and Z use dynamic motion, so single-frame detection is best-effort.</li>
+          <li><strong>Practice Partner:</strong> This is an educational tool and does not replace a certified human sign language interpreter.</li>
+          <li><strong>Privacy:</strong> Your image is sent to our server to find the sign, used only for this result, and replaced by the next image.</li>
+        </ul>
+      </div>
+    </div>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="site-container footer-inner">
+      <span>&copy; 2026 Sign Language Detection. All rights reserved.</span>
+      <span>Built with Flask & MediaPipe</span>
+    </div>
+  </footer>
+
+  <!-- Hidden Canvas for Video Frame Capture -->
+  <canvas id="captureCanvas" hidden></canvas>
+
+  <!-- jQuery & Application Logic -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

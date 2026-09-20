@@ -1,0 +1,18 @@
+# Core web framework & utilities
+Flask==2.3.3
+flask-cors==4.0.0
+Pillow==10.0.1
+requests==2.31.0
+PyYAML==6.0.1
+
+# Computer vision & deep learning
+numpy==1.24.3
+opencv-python-headless==4.8.0.76
+torch>=2.0.0
+torchvision>=0.15.0
+tqdm==4.66.1
+
+# Quality, testing, and formatting
+pytest==7.4.2
+black==23.9.1
+flake8==6.1.0

@@ -1,0 +1,40 @@
+# Git ignore rules for Sign Language Detection
+
+# Python / Environment
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+.env
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local data and detection outputs
+data/inputImage.jpg
+data/*.jpg
+data/*.png
+yolov5/runs/
+!yolov5/runs/.gitkeep
+!data/.gitkeep
+
+# Model weights if large (keep best.pt in LFS / release if >50MB)
+*.pt
+!yolov5/best.pt
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
